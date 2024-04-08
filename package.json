@@ -1,0 +1,10 @@
+{
+    "name": "com.arjhantoteck.returnable-unity-events",
+    "displayName": "Returnable Unity Events",
+    "description": "Unity Events where you can actually access the returned objects.",
+    "author": {
+        "name": "ArjhanToteck"
+    },
+    "version": "1.0.0",
+    "unity": "2021.3"
+}
