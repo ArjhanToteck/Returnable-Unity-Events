@@ -3,13 +3,16 @@ using UnityEditor;
 using System.Reflection.Emit;
 using Codice.CM.Client.Gui;
 using Mono.Cecil.Cil;
+using System.Collections.Generic;
+using System;
+using System.Reflection;
 
 namespace ReturnableUnityEvents
 {
 	[CustomPropertyDrawer(typeof(ReturnableUnityEvent<>))]
 	public class ReturnableUnityEventDrawer : PropertyDrawer
 	{
-		Object targetObject;
+		private UnityEngine.Object targetObject = null;
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
@@ -32,14 +35,45 @@ namespace ReturnableUnityEvents
 			Rect pos2 = new Rect(position.x + offsetSize + widthSize, position.y, widthSize - offsetSize, position.height);
 
 			// object field
-			EditorGUI.ObjectField(pos1, targetObject, typeof(Object), true);
+			var newTargetObject = EditorGUI.ObjectField(pos1, targetObject, typeof(UnityEngine.Object), true);
 
-			// function selection (disabled by default)
-			EditorGUI.BeginDisabledGroup(true);
-			EditorGUI.Popup(pos2, 0, new GUIContent[] {
-				new GUIContent("No Function")
-			});
-			EditorGUI.EndDisabledGroup();
+			// check if new object is selected
+			if (newTargetObject != targetObject)
+			{
+				targetObject = newTargetObject;
+			}
+
+			// check if no object selected
+			if (targetObject == null)
+			{
+				// TODO: implement a search window instead of a popup: https://www.youtube.com/watch?v=0HHeIUGsuW8
+
+				// function selection (disabled by default)
+				EditorGUI.BeginDisabledGroup(true);
+				EditorGUI.Popup(pos2, 0, new GUIContent[] {
+					new GUIContent("No Function")
+				});
+				EditorGUI.EndDisabledGroup();
+			}
+			else
+			{
+				// list functions
+
+				// get object type
+				Type objectType = targetObject.GetType();
+
+				// get static and non-static methods, fields, and properties
+				MethodInfo[] staticMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Static);
+				MethodInfo[] instanceMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+
+				PropertyInfo[] staticProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.Static);
+				PropertyInfo[] instanceProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+				FieldInfo[] staticFields = objectType.GetFields(BindingFlags.Public | BindingFlags.Instance);
+				FieldInfo[] instanceFields = objectType.GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+
+			}
 
 			// reset indent settings
 			EditorGUI.indentLevel = indent;
