@@ -17,6 +17,7 @@ namespace ReturnableUnityEvents
 			// get properties
 			SerializedProperty targetObjectProperty = property.FindPropertyRelative("targetObject");
 			SerializedProperty methodNameProperty = property.FindPropertyRelative("methodName");
+			Type returnType = Type.GetType(property.FindPropertyRelative("returnTypeName").stringValue);
 
 			// draw label and configure position
 			EditorGUI.BeginProperty(position, label, property);
@@ -78,35 +79,42 @@ namespace ReturnableUnityEvents
 					// get object type
 					Type objectType = targetObjectProperty.objectReferenceValue.GetType();
 
-					// TODO: filter all of these methods by type
-
 					// get methods
-					MethodInfo[] instanceMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
-					MethodInfo[] staticMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Static);
+					List<MethodInfo> instanceMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Instance).ToList();
+					List<MethodInfo> staticMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Static).ToList(); ;
 
 					// get property getters and setters
 
 					// instance
 					List<PropertyInfo> instanceProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
-					MethodInfo[] instancePropertyGetters = instanceProperties.Select(x => x.GetMethod).ToArray();
-					MethodInfo[] instancePropertySetters = instanceProperties.Select(x => x.SetMethod).ToArray();
+					List<MethodInfo> instancePropertyGetters = instanceProperties.Select(x => x.GetMethod).ToList();
+					List<MethodInfo> instancePropertySetters = instanceProperties.Select(x => x.SetMethod).ToList();
 
 					// static
 					List<PropertyInfo> staticProperties = objectType.GetProperties(BindingFlags.Public | BindingFlags.Static).ToList();
-					MethodInfo[] staticPropertyGetters = staticProperties.Select(x => x.GetMethod).ToArray();
-					MethodInfo[] staticPropertySetters = staticProperties.Select(x => x.SetMethod).ToArray();
+					List<MethodInfo> staticPropertyGetters = staticProperties.Select(x => x.GetMethod).ToList();
+					List<MethodInfo> staticPropertySetters = staticProperties.Select(x => x.SetMethod).ToList();
 
 					// exclude property methods from regular method lists
-					instanceMethods = instanceMethods.Except(instancePropertyGetters).Except(instancePropertySetters).ToArray();
-					staticMethods = staticMethods.Except(staticPropertyGetters).Except(staticPropertySetters).ToArray();
+					instanceMethods = instanceMethods.Except(instancePropertyGetters).Except(instancePropertySetters).ToList();
+					staticMethods = staticMethods.Except(staticPropertyGetters).Except(staticPropertySetters).ToList();
 
 					// TODO: probably want to add field "getters," though setters wouldn't make sense
 					// get fields
 					// List<FieldInfo> instanceFields = objectType.GetFields(BindingFlags.Public | BindingFlags.Instance).ToList();
 					// List<FieldInfo> staticFields = objectType.GetFields(BindingFlags.Public | BindingFlags.Static).ToList();
 
-					// add methods to search window
+					// filter methods by type
+					instanceMethods = FilterMethodInfosByType(instanceMethods, returnType);
+					staticMethods = FilterMethodInfosByType(staticMethods, returnType);
+					instancePropertyGetters = FilterMethodInfosByType(instancePropertyGetters, returnType);
+					instancePropertySetters = FilterMethodInfosByType(instancePropertySetters, returnType);
+					staticPropertyGetters = FilterMethodInfosByType(staticPropertyGetters, returnType);
+					staticPropertySetters = FilterMethodInfosByType(staticPropertySetters, returnType);
 
+					// TODO: don't add any groups that will be empty
+					// add methods to search window
+					searchWindow.searchTree.Add(new SearchTreeGroupEntry(new GUIContent(returnType.Name + " Functions")));
 					searchWindow.searchTree.Add(new SearchTreeGroupEntry(new GUIContent("Instance"), 1));
 					searchWindow.AddGroup("Methods", instanceMethods, 2);
 					searchWindow.searchTree.Add(new SearchTreeGroupEntry(new GUIContent("Properties"), 2));
@@ -136,6 +144,11 @@ namespace ReturnableUnityEvents
 			EditorGUI.indentLevel = indent;
 
 			EditorGUI.EndProperty();
+		}
+
+		private List<MethodInfo> FilterMethodInfosByType(List<MethodInfo> methods, Type returnType)
+		{
+			return methods.Where(method => method != null && method.ReturnType == returnType).ToList();
 		}
 	}
 }

@@ -10,6 +10,9 @@ namespace ReturnableUnityEvents
 		public UnityEngine.Object targetObject;
 		public string methodName;
 
+		[SerializeField]
+		private string returnTypeName = typeof(T).FullName;
+
 		public T Invoke()
 		{
 			// get type and method info

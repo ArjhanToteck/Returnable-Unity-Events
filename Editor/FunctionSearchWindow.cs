@@ -9,11 +9,9 @@ public class FunctionSearchWindow : ScriptableObject, ISearchWindowProvider
 {
     public Action<SearchTreeEntry> onSelectEntryCallback;
 
-    public List<SearchTreeEntry> searchTree = new List<SearchTreeEntry>() {
-        new SearchTreeGroupEntry(new GUIContent("Functions"))
-    };
+    public List<SearchTreeEntry> searchTree = new List<SearchTreeEntry>();
 
-    public void AddGroup(string groupName, MethodInfo[] functions, int level = 1)
+    public void AddGroup(string groupName, List<MethodInfo> functions, int level = 1)
     {
         // add group entry
         searchTree.Add(new SearchTreeGroupEntry(new GUIContent(groupName), level));
