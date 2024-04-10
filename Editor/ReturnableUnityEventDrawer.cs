@@ -12,7 +12,6 @@ namespace ReturnableUnityEvents
 	[CustomPropertyDrawer(typeof(ReturnableUnityEvent<>))]
 	public class ReturnableUnityEventDrawer : PropertyDrawer
 	{
-
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			// get properties
@@ -37,9 +36,11 @@ namespace ReturnableUnityEvents
 			Rect pos2 = new Rect(position.x + offsetSize + widthSize, position.y, widthSize - offsetSize, position.height);
 
 			// object field
+			UnityEngine.Object oldTargetObject = targetObjectProperty.objectReferenceValue;
+
 			EditorGUI.ObjectField(pos1, targetObjectProperty, typeof(UnityEngine.Object), new GUIContent(""));
 
-			// check if no object selected
+			// check if no object selected or if the object changed
 			if (targetObjectProperty.objectReferenceValue == null)
 			{
 				// function selection (disabled by default)
@@ -54,8 +55,17 @@ namespace ReturnableUnityEvents
 			}
 			else
 			{
-				// display no function or actual method name
-				string displayedMethodName = methodNameProperty.stringValue != null && methodNameProperty.stringValue != "" ? methodNameProperty.stringValue : "No Function";
+				// display  method name
+				string displayedMethodName = methodNameProperty.stringValue;
+
+				// reset method name if empty, null, or object just changed
+				if (displayedMethodName == "" || displayedMethodName == null || oldTargetObject != targetObjectProperty.objectReferenceValue)
+				{
+					displayedMethodName = "No Function";
+
+					// remove method name
+					methodNameProperty.stringValue = null;
+				}
 
 				// draw enabled function popup (technically a button)
 				var functionPopupPressed = GUI.Button(pos2, new GUIContent(displayedMethodName), EditorStyles.popup);
@@ -66,7 +76,9 @@ namespace ReturnableUnityEvents
 					FunctionSearchWindow searchWindow = ScriptableObject.CreateInstance<FunctionSearchWindow>();
 
 					// get object type
-					Type objectType = targetObjectProperty.GetType();
+					Type objectType = targetObjectProperty.objectReferenceValue.GetType();
+
+					// TODO: filter all of these methods by type
 
 					// get methods
 					MethodInfo[] instanceMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Instance);

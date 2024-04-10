@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Reflection;
 
 namespace ReturnableUnityEvents
 {
@@ -11,7 +12,32 @@ namespace ReturnableUnityEvents
 
 		public T Invoke()
 		{
-			return default;
+			// get type and method info
+			Type targetType = targetObject.GetType();
+			MethodInfo methodInfo = targetType.GetMethod(methodName);
+
+			// method not found
+			if (methodInfo == null)
+			{
+				Debug.LogError("Attempted to invoke an invalid method.");
+				return default;
+			}
+
+			// static methods
+			if (methodInfo.IsStatic)
+			{
+				return (T)methodInfo.Invoke(null, null);
+			}
+
+			// no target object
+			if (targetObject == null)
+			{
+				Debug.LogError("Attempted to invoke an instance method without a target object.");
+				return default;
+			}
+
+			// TODO: add parameter support
+			return (T)methodInfo.Invoke(targetObject, null);
 		}
 	}
 }
