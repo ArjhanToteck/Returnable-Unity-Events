@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class FunctionSearchWindow : ScriptableObject, ISearchWindowProvider
 {
+    public Action<SearchTreeEntry> onSelectEntryCallback;
+
     public List<SearchTreeEntry> searchTree = new List<SearchTreeEntry>() {
         new SearchTreeGroupEntry(new GUIContent("Functions"))
     };
@@ -13,30 +17,32 @@ public class FunctionSearchWindow : ScriptableObject, ISearchWindowProvider
     {
         // add group entry
         searchTree.Add(new SearchTreeGroupEntry(new GUIContent(groupName), level));
-        
+
         // add children
-        for (int i = 0; i < functions.Length; i++)
+        foreach (MethodInfo function in functions)
         {
-            if (functions[i] == null)
+            if (function == null)
             {
                 continue;
             }
-            
-            searchTree.Add( new SearchTreeEntry(new GUIContent(functions[i].Name))
+
+            searchTree.Add(new SearchTreeEntry(new GUIContent(function.Name))
             {
-                userData = functions[i],
+                userData = function.Name,
                 level = level + 1
             });
         }
     }
-    
+
     public List<SearchTreeEntry> CreateSearchTree(SearchWindowContext context)
     {
         return searchTree;
     }
 
-    public bool OnSelectEntry(SearchTreeEntry SearchTreeEntry, SearchWindowContext context)
+    public bool OnSelectEntry(SearchTreeEntry searchTreeEntry, SearchWindowContext context)
     {
+        onSelectEntryCallback.Invoke(searchTreeEntry);
+
         return true;
     }
 }

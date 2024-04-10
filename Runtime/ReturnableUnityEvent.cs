@@ -4,10 +4,14 @@ using System;
 namespace ReturnableUnityEvents
 {
 	[Serializable]
-	public class ReturnableUnityEvent<T> : MonoBehaviour
+	public class ReturnableUnityEvent<T>
 	{
-		public Func<T> eventFunction;
+		public UnityEngine.Object targetObject;
+		public string methodName;
 
-
+		public T Invoke()
+		{
+			return default;
+		}
 	}
 }

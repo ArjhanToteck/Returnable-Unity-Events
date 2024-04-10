@@ -12,13 +12,15 @@ namespace ReturnableUnityEvents
 	[CustomPropertyDrawer(typeof(ReturnableUnityEvent<>))]
 	public class ReturnableUnityEventDrawer : PropertyDrawer
 	{
-		UnityEngine.Object targetObject;
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
-			EditorGUI.BeginProperty(position, label, property);
+			// get properties
+			SerializedProperty targetObjectProperty = property.FindPropertyRelative("targetObject");
+			SerializedProperty methodNameProperty = property.FindPropertyRelative("methodName");
 
 			// draw label and configure position
+			EditorGUI.BeginProperty(position, label, property);
 			Rect labelPosition = new Rect(position.x, position.y, position.width, position.height);
 			position = EditorGUI.PrefixLabel(labelPosition, EditorGUIUtility.GetControlID(FocusType.Passive), label);
 
@@ -35,16 +37,10 @@ namespace ReturnableUnityEvents
 			Rect pos2 = new Rect(position.x + offsetSize + widthSize, position.y, widthSize - offsetSize, position.height);
 
 			// object field
-			var newTargetObject = EditorGUI.ObjectField(pos1, targetObject, typeof(UnityEngine.Object), true);
-
-			// check if new object is selected
-			if (newTargetObject != targetObject)
-			{
-				targetObject = newTargetObject;
-			}
+			EditorGUI.ObjectField(pos1, targetObjectProperty, typeof(UnityEngine.Object), new GUIContent(""));
 
 			// check if no object selected
-			if (targetObject == null)
+			if (targetObjectProperty.objectReferenceValue == null)
 			{
 				// function selection (disabled by default)
 				EditorGUI.BeginDisabledGroup(true);
@@ -52,11 +48,17 @@ namespace ReturnableUnityEvents
 					new GUIContent("No Function")
 				});
 				EditorGUI.EndDisabledGroup();
+
+				// remove method name
+				methodNameProperty.stringValue = null;
 			}
 			else
 			{
+				// display no function or actual method name
+				string displayedMethodName = methodNameProperty.stringValue != null && methodNameProperty.stringValue != "" ? methodNameProperty.stringValue : "No Function";
+
 				// draw enabled function popup (technically a button)
-				var functionPopupPressed = GUI.Button(pos2, new GUIContent("No Function"), EditorStyles.popup);
+				var functionPopupPressed = GUI.Button(pos2, new GUIContent(displayedMethodName), EditorStyles.popup);
 
 				if (functionPopupPressed)
 				{
@@ -64,7 +66,7 @@ namespace ReturnableUnityEvents
 					FunctionSearchWindow searchWindow = ScriptableObject.CreateInstance<FunctionSearchWindow>();
 
 					// get object type
-					Type objectType = targetObject.GetType();
+					Type objectType = targetObjectProperty.GetType();
 
 					// get methods
 					MethodInfo[] instanceMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
@@ -104,6 +106,14 @@ namespace ReturnableUnityEvents
 					searchWindow.searchTree.Add(new SearchTreeGroupEntry(new GUIContent("Properties"), 2));
 					searchWindow.AddGroup("Getters", staticPropertyGetters, 3);
 					searchWindow.AddGroup("Setters", staticPropertySetters, 3);
+
+					// set callback
+					searchWindow.onSelectEntryCallback = new Action<SearchTreeEntry>((SearchTreeEntry) =>
+					{
+						// set method name property to selection
+						methodNameProperty.stringValue = (string)SearchTreeEntry.userData;
+						property.serializedObject.ApplyModifiedProperties();
+					});
 
 					// open search window
 					SearchWindow.Open(new SearchWindowContext(GUIUtility.GUIToScreenPoint(Event.current.mousePosition)), searchWindow);
