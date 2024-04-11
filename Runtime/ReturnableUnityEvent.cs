@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace ReturnableUnityEvents
 {
@@ -9,6 +10,9 @@ namespace ReturnableUnityEvents
 	{
 		public UnityEngine.Object targetObject;
 		public string methodName;
+
+		[SerializeField]
+		public List<object> parameters = new() { "" };
 
 		[SerializeField]
 		private string returnTypeName = typeof(T).FullName;

@@ -17,6 +17,7 @@ namespace ReturnableUnityEvents
 			// get properties
 			SerializedProperty targetObjectProperty = property.FindPropertyRelative("targetObject");
 			SerializedProperty methodNameProperty = property.FindPropertyRelative("methodName");
+			SerializedProperty parametersProperty = property.FindPropertyRelative("parameters");
 			Type returnType = Type.GetType(property.FindPropertyRelative("returnTypeName").stringValue);
 
 			// draw label and configure position
@@ -38,8 +39,8 @@ namespace ReturnableUnityEvents
 
 			// object field
 			UnityEngine.Object oldTargetObject = targetObjectProperty.objectReferenceValue;
-
 			EditorGUI.ObjectField(pos1, targetObjectProperty, typeof(UnityEngine.Object), new GUIContent(""));
+			bool targetObjectChanged = oldTargetObject != targetObjectProperty.objectReferenceValue;
 
 			// check if no object selected or if the object changed
 			if (targetObjectProperty.objectReferenceValue == null)
@@ -58,13 +59,15 @@ namespace ReturnableUnityEvents
 			{
 				// display  method name
 				string displayedMethodName = methodNameProperty.stringValue;
+				bool functionSelected = true;
 
 				// reset method name if empty, null, or object just changed
-				if (displayedMethodName == "" || displayedMethodName == null || oldTargetObject != targetObjectProperty.objectReferenceValue)
+				if (displayedMethodName == "" || displayedMethodName == null || targetObjectChanged)
 				{
 					displayedMethodName = "No Function";
+					functionSelected = false;
 
-					// remove method name
+					// remove method name in serialized object
 					methodNameProperty.stringValue = null;
 				}
 
@@ -99,7 +102,7 @@ namespace ReturnableUnityEvents
 					instanceMethods = instanceMethods.Except(instancePropertyGetters).Except(instancePropertySetters).ToList();
 					staticMethods = staticMethods.Except(staticPropertyGetters).Except(staticPropertySetters).ToList();
 
-					// TODO: probably want to add field "getters," though setters wouldn't make sense
+					// TODO: probably want to add field "getters," though setters wouldn't make sense. could probably just have a bool in ReturnableUnityEvent that says we have a field instead of an actual method and then just get the method using its name in ReturnableUnityEvent.Invoke
 					// get fields
 					// List<FieldInfo> instanceFields = objectType.GetFields(BindingFlags.Public | BindingFlags.Instance).ToList();
 					// List<FieldInfo> staticFields = objectType.GetFields(BindingFlags.Public | BindingFlags.Static).ToList();
@@ -130,13 +133,50 @@ namespace ReturnableUnityEvents
 					// set callback
 					searchWindow.onSelectEntryCallback = new Action<SearchTreeEntry>((SearchTreeEntry) =>
 					{
+						MethodInfo function = (MethodInfo)SearchTreeEntry.userData;
+
 						// set method name property to selection
-						methodNameProperty.stringValue = (string)SearchTreeEntry.userData;
+						methodNameProperty.stringValue = function.Name;
+						// clear parameters list to prepare for updating it
+						parametersProperty.ClearArray();
+
+						// loop through method parameters
+						List<ParameterInfo> parameters = function.GetParameters().ToList();
+
+						for (int i = 0; i < parameters.Count; i++)
+						{
+							// get param default
+							object defaultParameter = parameters[i].DefaultValue;
+
+							// if no default param is specified, set to default of its class
+							if (defaultParameter == null)
+							{
+								defaultParameter = Activator.CreateInstance(parameters[i].ParameterType);
+							}
+
+							// add default parameter to array
+							parametersProperty.InsertArrayElementAtIndex(i);
+							parametersProperty.GetArrayElementAtIndex(i).managedReferenceValue = defaultParameter;
+						}
+
 						property.serializedObject.ApplyModifiedProperties();
 					});
 
 					// open search window
 					SearchWindow.Open(new SearchWindowContext(GUIUtility.GUIToScreenPoint(Event.current.mousePosition)), searchWindow);
+				}
+
+				// create inputs for each parameter
+				if (functionSelected)
+				{
+					Debug.Log(parametersProperty.arraySize);
+					// loop through parameters
+					for (int i = 0; i < parametersProperty.arraySize; i++)
+					{
+						// get parameter property and create a property field for it
+						SerializedProperty elementProperty = parametersProperty.GetArrayElementAtIndex(i);
+						EditorGUILayout.PropertyField(elementProperty, true);
+					}
 				}
 			}
 

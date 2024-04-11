@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
@@ -24,9 +25,18 @@ public class FunctionSearchWindow : ScriptableObject, ISearchWindowProvider
                 continue;
             }
 
-            searchTree.Add(new SearchTreeEntry(new GUIContent(function.Name))
+            // get method name
+            string functionLabel = function.Name + " ( ";
+
+            // add parameters to function label
+            List<ParameterInfo> parameters = function.GetParameters().ToList();
+            List<string> parameterNames = parameters.Select(parameter => parameter.ParameterType.Name).ToList();
+            functionLabel += string.Join(", ", parameterNames);
+            functionLabel += " )";
+
+            searchTree.Add(new SearchTreeEntry(new GUIContent(functionLabel))
             {
-                userData = function.Name,
+                userData = function,
                 level = level + 1
             });
         }
