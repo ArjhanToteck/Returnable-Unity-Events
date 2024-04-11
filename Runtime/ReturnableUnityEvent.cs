@@ -1,18 +1,18 @@
 using UnityEngine;
 using System;
 using System.Reflection;
-using System.Collections.Generic;
 
 namespace ReturnableUnityEvents
 {
 	[Serializable]
 	public class ReturnableUnityEvent<T>
 	{
+
 		public UnityEngine.Object targetObject;
 		public string methodName;
 
 		[SerializeField]
-		public List<object> parameters = new() { "" };
+		private string parametersJSON = "";
 
 		[SerializeField]
 		private string returnTypeName = typeof(T).FullName;

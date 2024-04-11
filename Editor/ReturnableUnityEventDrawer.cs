@@ -17,7 +17,7 @@ namespace ReturnableUnityEvents
 			// get properties
 			SerializedProperty targetObjectProperty = property.FindPropertyRelative("targetObject");
 			SerializedProperty methodNameProperty = property.FindPropertyRelative("methodName");
-			SerializedProperty parametersProperty = property.FindPropertyRelative("parameters");
+			SerializedProperty parametersJsonProperty = property.FindPropertyRelative("parametersJSON");
 			Type returnType = Type.GetType(property.FindPropertyRelative("returnTypeName").stringValue);
 
 			// draw label and configure position
@@ -137,11 +137,10 @@ namespace ReturnableUnityEvents
 
 						// set method name property to selection
 						methodNameProperty.stringValue = function.Name;
-						// clear parameters list to prepare for updating it
-						parametersProperty.ClearArray();
 
 						// loop through method parameters
 						List<ParameterInfo> parameters = function.GetParameters().ToList();
+						List<object> defaultParameters = new List<object>();
 
 						for (int i = 0; i < parameters.Count; i++)
 						{
@@ -154,10 +153,10 @@ namespace ReturnableUnityEvents
 								defaultParameter = Activator.CreateInstance(parameters[i].ParameterType);
 							}
 
-							// add default parameter to array
-							parametersProperty.InsertArrayElementAtIndex(i);
-							parametersProperty.GetArrayElementAtIndex(i).managedReferenceValue = defaultParameter;
+							defaultParameters.Add(defaultParameter);
 						}
+
+						parametersJsonProperty.stringValue = ParameterSerializer.SerializeParameters(defaultParameters);
 
 						property.serializedObject.ApplyModifiedProperties();
 					});
@@ -169,14 +168,18 @@ namespace ReturnableUnityEvents
 				// create inputs for each parameter
 				if (functionSelected)
 				{
-					Debug.Log(parametersProperty.arraySize);
-					// loop through parameters
-					for (int i = 0; i < parametersProperty.arraySize; i++)
+					// get parameters
+					List<object> parameters = ParameterSerializer.DeserializeParameters(parametersJsonProperty.stringValue);
+
+					if (parameters != null)
 					{
-						// get parameter property and create a property field for it
-						SerializedProperty elementProperty = parametersProperty.GetArrayElementAtIndex(i);
-						EditorGUILayout.PropertyField(elementProperty, true);
+						// loop through parameters
+						foreach (object parameter in parameters)
+						{
+							Debug.Log(parameter);
+						}
 					}
+
 				}
 			}
 
