@@ -8,7 +8,6 @@ namespace ReturnableUnityEvents
 	[Serializable]
 	public class ReturnableUnityEvent<T>
 	{
-
 		public UnityEngine.Object targetObject;
 
 		// TODO: add overload support, this is not gonna work
