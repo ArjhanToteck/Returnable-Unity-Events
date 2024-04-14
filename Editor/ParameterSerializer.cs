@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace ReturnableUnityEvents
+namespace ReturnableUnityEvents.Editor
 {
     [Serializable]
     public static class ParameterSerializer

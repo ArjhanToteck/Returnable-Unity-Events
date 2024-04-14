@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Reflection;
+using ReturnableUnityEvents.Editor;
 
 namespace ReturnableUnityEvents
 {
@@ -9,10 +10,12 @@ namespace ReturnableUnityEvents
 	{
 
 		public UnityEngine.Object targetObject;
+
+		// TODO: add overload support, this is not gonna work
 		public string methodName;
 
 		[SerializeField]
-		private string parametersJSON = "";
+		private string parametersJSON = null;
 
 		[SerializeField]
 		private string returnTypeName = typeof(T).FullName;
@@ -22,6 +25,13 @@ namespace ReturnableUnityEvents
 			// get type and method info
 			Type targetType = targetObject.GetType();
 			MethodInfo methodInfo = targetType.GetMethod(methodName);
+
+			object[] parameters = null;
+
+			if (parametersJSON != "")
+			{
+				parameters = ParameterSerializer.DeserializeParameters(parametersJSON).ToArray();
+			}
 
 			// method not found
 			if (methodInfo == null)
@@ -33,7 +43,7 @@ namespace ReturnableUnityEvents
 			// static methods
 			if (methodInfo.IsStatic)
 			{
-				return (T)methodInfo.Invoke(null, null);
+				return (T)methodInfo.Invoke(null, parameters);
 			}
 
 			// no target object
@@ -43,8 +53,7 @@ namespace ReturnableUnityEvents
 				return default;
 			}
 
-			// TODO: add parameter support
-			return (T)methodInfo.Invoke(targetObject, null);
+			return (T)methodInfo.Invoke(targetObject, parameters);
 		}
 	}
 }

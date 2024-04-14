@@ -7,11 +7,15 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor.Experimental.GraphView;
 
-namespace ReturnableUnityEvents
+namespace ReturnableUnityEvents.Editor
 {
 	[CustomPropertyDrawer(typeof(ReturnableUnityEvent<>))]
 	public class ReturnableUnityEventDrawer : PropertyDrawer
 	{
+		private const float verticalSpacing = 5;
+
+		private int lines;
+
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			// get properties
@@ -22,7 +26,7 @@ namespace ReturnableUnityEvents
 
 			// draw label and configure position
 			EditorGUI.BeginProperty(position, label, property);
-			Rect labelPosition = new Rect(position.x, position.y, position.width, position.height);
+			Rect labelPosition = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 			position = EditorGUI.PrefixLabel(labelPosition, EditorGUIUtility.GetControlID(FocusType.Passive), label);
 
 			// configure indent
@@ -34,12 +38,15 @@ namespace ReturnableUnityEvents
 			float offsetSize = 2;
 
 			// get positions for inputs
-			Rect pos1 = new Rect(position.x, position.y, widthSize - offsetSize, position.height);
-			Rect pos2 = new Rect(position.x + offsetSize + widthSize, position.y, widthSize - offsetSize, position.height);
+			Rect column1 = new Rect(position.x, position.y, widthSize - offsetSize, EditorGUIUtility.singleLineHeight);
+			Rect column2 = new Rect(position.x + offsetSize + widthSize, position.y, widthSize - offsetSize, EditorGUIUtility.singleLineHeight);
+
+			// reset lines count
+			lines = 1;
 
 			// object field
 			UnityEngine.Object oldTargetObject = targetObjectProperty.objectReferenceValue;
-			EditorGUI.ObjectField(pos1, targetObjectProperty, typeof(UnityEngine.Object), new GUIContent(""));
+			EditorGUI.ObjectField(column1, targetObjectProperty, typeof(UnityEngine.Object), new GUIContent(""));
 			bool targetObjectChanged = oldTargetObject != targetObjectProperty.objectReferenceValue;
 
 			// check if no object selected or if the object changed
@@ -47,7 +54,7 @@ namespace ReturnableUnityEvents
 			{
 				// function selection (disabled by default)
 				EditorGUI.BeginDisabledGroup(true);
-				EditorGUI.Popup(pos2, 0, new GUIContent[] {
+				EditorGUI.Popup(column2, 0, new GUIContent[] {
 					new GUIContent("No Function")
 				});
 				EditorGUI.EndDisabledGroup();
@@ -72,7 +79,7 @@ namespace ReturnableUnityEvents
 				}
 
 				// draw enabled function popup (technically a button)
-				var functionPopupPressed = GUI.Button(pos2, new GUIContent(displayedMethodName), EditorStyles.popup);
+				var functionPopupPressed = GUI.Button(column2, new GUIContent(displayedMethodName), EditorStyles.popup);
 
 				if (functionPopupPressed)
 				{
@@ -174,12 +181,91 @@ namespace ReturnableUnityEvents
 					if (parameters != null)
 					{
 						// loop through parameters
-						foreach (object parameter in parameters)
+						for (int i = 0; i < parameters.Count; i++)
 						{
-							Debug.Log(parameter);
+							// calculate position
+							Rect parameterPosition;
+
+							// put in column for even or odd
+							if (i % 2 == 0)
+							{
+								parameterPosition = new Rect(column1);
+
+								// we need another line if even
+								lines++;
+							}
+							else
+							{
+								parameterPosition = new Rect(column2);
+							}
+
+							// move position down
+							parameterPosition.y += Mathf.Ceil((i + 1) / 2f) * (EditorGUIUtility.singleLineHeight + verticalSpacing);
+
+							// get param with type
+							object parameter = parameters[i];
+							Type parameterType = parameter.GetType();
+
+							// create input field
+							if (parameterType == typeof(int))
+							{
+								parameters[i] = EditorGUI.IntField(parameterPosition, (int)parameter);
+							}
+							else if (parameterType == typeof(float))
+							{
+								parameters[i] = EditorGUI.FloatField(parameterPosition, (float)parameter);
+							}
+							else if (parameterType == typeof(string))
+							{
+								parameters[i] = EditorGUI.TextField(parameterPosition, (string)parameter);
+							}
+							else if (parameterType == typeof(bool))
+							{
+								parameters[i] = EditorGUI.Toggle(parameterPosition, (bool)parameter);
+							}
+							else if (parameterType == typeof(Vector2))
+							{
+								parameters[i] = EditorGUI.Vector2Field(parameterPosition, "", (Vector2)parameter);
+							}
+							else if (parameterType == typeof(Vector3))
+							{
+								parameters[i] = EditorGUI.Vector3Field(parameterPosition, "", (Vector3)parameter);
+							}
+							else if (parameterType == typeof(Color))
+							{
+								parameters[i] = EditorGUI.ColorField(parameterPosition, "", (Color)parameter);
+							}
+							else if (parameterType == typeof(AnimationCurve))
+							{
+								parameters[i] = EditorGUI.CurveField(parameterPosition, "", (AnimationCurve)parameter);
+							}
+							else if (parameterType == typeof(Rect))
+							{
+								parameters[i] = EditorGUI.RectField(parameterPosition, "", (Rect)parameter);
+							}
+							else if (parameterType == typeof(RectInt))
+							{
+								parameters[i] = EditorGUI.RectIntField(parameterPosition, "", (RectInt)parameter);
+							}
+							else if (parameterType == typeof(Gradient))
+							{
+								parameters[i] = EditorGUI.GradientField(parameterPosition, "", (Gradient)parameter);
+							}
+							else if (parameterType == typeof(LayerMask))
+							{
+								parameters[i] = EditorGUI.LayerField(parameterPosition, "", (LayerMask)parameter);
+							}
+							else if (parameterType == typeof(Enum))
+							{
+								parameters[i] = EditorGUI.EnumPopup(parameterPosition, "", (Enum)parameter);
+							}
+
+							// TODO: figure out a way to do it with custom objects and UnityEngine.Objects
 						}
 					}
 
+					// serialize and set new parameters
+					parametersJsonProperty.stringValue = ParameterSerializer.SerializeParameters(parameters);
 				}
 			}
 
@@ -187,6 +273,11 @@ namespace ReturnableUnityEvents
 			EditorGUI.indentLevel = indent;
 
 			EditorGUI.EndProperty();
+		}
+
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+		{
+			return lines * (EditorGUIUtility.singleLineHeight + verticalSpacing);
 		}
 
 		private List<MethodInfo> FilterMethodInfosByType(List<MethodInfo> methods, Type returnType)
