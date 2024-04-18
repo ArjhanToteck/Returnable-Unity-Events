@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.Experimental.GraphView;
+using Object = UnityEngine.Object;
 
 namespace ReturnableUnityEvents.Editor
 {
@@ -45,8 +46,8 @@ namespace ReturnableUnityEvents.Editor
 			lines = 1;
 
 			// object field
-			UnityEngine.Object oldTargetObject = targetObjectProperty.objectReferenceValue;
-			EditorGUI.ObjectField(column1, targetObjectProperty, typeof(UnityEngine.Object), new GUIContent(""));
+			Object oldTargetObject = targetObjectProperty.objectReferenceValue;
+			EditorGUI.ObjectField(column1, targetObjectProperty, typeof(Object), new GUIContent(""));
 			bool targetObjectChanged = oldTargetObject != targetObjectProperty.objectReferenceValue;
 
 			// check if no object selected or if the object changed

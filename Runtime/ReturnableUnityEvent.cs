@@ -2,13 +2,14 @@ using UnityEngine;
 using System;
 using System.Reflection;
 using ReturnableUnityEvents.Editor;
+using Object = UnityEngine.Object;
 
 namespace ReturnableUnityEvents
 {
 	[Serializable]
 	public class ReturnableUnityEvent<T>
 	{
-		public UnityEngine.Object targetObject;
+		public Object targetObject;
 
 		// TODO: add overload support, this is not gonna work
 		public string methodName;
