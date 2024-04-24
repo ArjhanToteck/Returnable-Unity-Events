@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Reflection.Emit;
@@ -287,3 +288,4 @@ namespace ReturnableUnityEvents.Editor
 		}
 	}
 }
+#endif
